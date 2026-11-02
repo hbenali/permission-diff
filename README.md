@@ -18,6 +18,8 @@ Status: prototype. Everything stays local (`chrome.storage`); nothing is sent an
 node --test test/diff.test.mjs
 ```
 
+Privacy policy: [PRIVACY.md](PRIVACY.md), published at https://www.hbenali.ovh/permission-diff-privacy.html (the URL for store listings). Icons: `icons/icon.svg` is the source; the PNGs are rendered from it.
+
 ## Known gaps
 
 - Naive registrable-domain logic (no public-suffix list).

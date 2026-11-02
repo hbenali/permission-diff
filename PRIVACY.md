@@ -1,6 +1,6 @@
 # Privacy policy: Permission Diff
 
-_Last updated: 2026-11-02_
+_Last updated: 2026-11-02_ · Published version: https://www.hbenali.ovh/permission-diff-privacy.html (English and French)
 
 Permission Diff runs entirely in your browser. **It does not send any data anywhere.** There is no server, no account, no analytics and no telemetry.
 

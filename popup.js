@@ -1,32 +1,69 @@
-const out = document.getElementById('out');
-// Firefox MV3 treats host permissions as optional: ask for them from a user gesture.
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+const CAPS = {
+  'geolocation': ['Location', 'Asked for your position'],
+  'camera/microphone': ['Camera or microphone', 'Asked to record from your devices'],
+  'screen-capture': ['Screen capture', 'Asked to record your screen'],
+  'clipboard-read': ['Clipboard read', 'Read what you copied'],
+  'service-worker': ['Service worker', 'Registered a background script for this site'],
+  'notifications': ['Notifications', 'Asked to show notifications'],
+  'webrtc': ['WebRTC', 'Opened a peer-to-peer connection (can reveal your IP address)'],
+};
+
+// Firefox MV3 treats host permissions as optional: ask from a user gesture.
 const ALL = { origins: ['<all_urls>'] };
 chrome.permissions.contains(ALL).then(ok => {
   if (ok) return;
-  const b = document.createElement('button');
-  b.textContent = 'Grant access to all sites (required)';
-  b.onclick = () => chrome.permissions.request(ALL).then(g => { if (g) location.reload(); });
-  document.body.prepend(b);
-});
-const li = (items) => items.map(i => { const e = document.createElement('li'); const c = document.createElement('code'); c.textContent = i; e.append(c); return e; });
-chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) =>
-  chrome.runtime.sendMessage({ type: 'popup', tabId: tab.id })).then(r => {
-  out.textContent = '';
-  if (!r) { out.textContent = 'No data for this tab.'; return; }
-  const p = document.createElement('p');
-  p.textContent = r.baseline.visits === 0 ? `${r.site}: first visit, building baseline.` : `${r.site}: compared with ${r.baseline.visits} earlier visit(s).`;
-  out.append(p);
-  for (const [title, items] of [['New third-party domains', r.diff.thirdParties], ['Newly used capabilities', r.diff.capabilities]]) {
-    if (!items.length) continue;
-    const h = document.createElement('strong'); h.textContent = title;
-    const ul = document.createElement('ul'); ul.append(...li(items)); out.append(h, ul);
-  }
-  if (!r.diff.thirdParties.length && !r.diff.capabilities.length && r.baseline.visits) out.append('No changes.');
+  $('grant').hidden = false;
+  $('grant-btn').onclick = () => chrome.permissions.request(ALL).then(g => { if (g) location.reload(); });
 });
 
-// Clear everything the extension has stored (baselines and current visits).
-const clear = document.createElement('button');
-clear.textContent = 'Clear stored data';
-clear.style.marginTop = '10px';
-clear.onclick = async () => { await chrome.storage.local.clear(); await chrome.storage.session.clear(); location.reload(); };
-document.body.append(clear);
+// Two-step clear without a blocking confirm() dialog.
+let armed = false;
+$('clear').onclick = async e => {
+  if (!armed) { armed = true; e.target.textContent = 'Click again to delete all data'; e.target.classList.add('armed'); return; }
+  await chrome.storage.local.clear(); await chrome.storage.session.clear(); location.reload();
+};
+
+function section(title, items, render) {
+  const s = el('div', 'section'); s.append(el('h2', null, `${title} (${items.length})`));
+  for (const i of items) s.append(render(i));
+  return s;
+}
+const domainRow = d => { const r = el('div', 'item'); r.append(el('span', 'dot'), el('b', null, d)); return r; };
+const capRow = c => {
+  const [name, desc] = CAPS[c] || [c, 'Used by the page'];
+  const r = el('div', 'item'); const t = el('div'); t.append(el('b', null, name), el('small', null, desc));
+  r.append(el('span', 'dot'), t); return r;
+};
+function known(base) {
+  const n = base.thirdParties.length + base.capabilities.length;
+  if (!n) return null;
+  const d = el('details'); d.append(el('summary', null, `Already known for this site (${n})`));
+  const ul = el('ul');
+  for (const x of [...base.thirdParties, ...base.capabilities]) ul.append(el('li', null, x));
+  d.append(ul); return d;
+}
+
+chrome.tabs.query({ active: true, currentWindow: true })
+  .then(([tab]) => chrome.runtime.sendMessage({ type: 'popup', tabId: tab.id }))
+  .then(r => {
+    const out = $('out'); out.textContent = '';
+    if (!r) { out.append(el('div', 'hint', 'Nothing to show for this tab. Open a regular web page (http or https) and reload it.')); return; }
+    const { site, diff, baseline } = r;
+    const n = diff.thirdParties.length + diff.capabilities.length;
+    out.append(el('div', 'site', site));
+    const pill = $('pill'); pill.hidden = false;
+    if (baseline.visits === 0) {
+      out.append(el('div', 'sub', 'First visit: building a baseline. Changes are flagged from the next visit.'));
+      pill.textContent = 'Baseline'; out.append(...[known(baseline)].filter(Boolean)); return;
+    }
+    out.append(el('div', 'sub', `Compared with ${baseline.visits} earlier visit${baseline.visits > 1 ? 's' : ''}`));
+    pill.textContent = n ? `${n} new` : 'No changes'; pill.className = 'pill ' + (n ? 'bad' : 'ok');
+    if (!n) { out.append(el('div', 'empty', '✓ Nothing new since your earlier visits')); }
+    if (diff.capabilities.length) out.append(section('New capabilities', diff.capabilities, capRow));
+    if (diff.thirdParties.length) out.append(section('New third-party domains', diff.thirdParties, domainRow));
+    const k = known(baseline); if (k) out.append(k);
+  })
+  .catch(() => { $('out').textContent = 'Could not read data for this tab.'; });

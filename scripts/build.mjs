@@ -1,6 +1,6 @@
 // Builds build/chrome (the repo manifest as is) and build/firefox (background.scripts + gecko id).
 import { cpSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
-const FILES = ['background.js', 'diff.js', 'hook.js', 'relay.js', 'popup.html', 'popup.js'];
+const FILES = ['background.js', 'diff.js', 'hook.js', 'relay.js', 'popup.html', 'popup.css', 'popup.js'];
 const base = JSON.parse(readFileSync('manifest.json', 'utf8'));
 rmSync('build', { recursive: true, force: true });
 for (const target of ['chrome', 'firefox']) {

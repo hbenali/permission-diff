@@ -1,3 +1,26 @@
-<!doctype html><meta charset="utf-8">
-<style>body{font:13px system-ui;width:320px;margin:12px}h1{font-size:14px;margin:0 0 8px}code{background:#eee;padding:1px 4px;border-radius:3px}li{margin:2px 0}@media(prefers-color-scheme:dark){body{background:#222;color:#eee}code{background:#444}}</style>
-<h1>Permission Diff</h1><div id="out">…</div><script src="popup.js"></script>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="popup.css">
+<title>Permission Diff</title>
+</head>
+<body>
+<header>
+  <img src="icons/icon48.png" alt="" width="24" height="24">
+  <h1>Permission Diff</h1>
+  <span id="pill" class="pill" hidden></span>
+</header>
+<div id="grant" class="banner" hidden>
+  <p>Access to all sites is needed to watch for changes.</p>
+  <button id="grant-btn" class="primary">Grant access</button>
+</div>
+<main id="out" aria-live="polite">Loading…</main>
+<footer>
+  <button id="clear" class="link">Clear stored data</button>
+  <a href="https://www.hbenali.ovh/permission-diff-privacy.html" target="_blank" rel="noopener">Privacy</a>
+</footer>
+<script src="popup.js"></script>
+</body>
+</html>

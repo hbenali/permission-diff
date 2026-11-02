@@ -10,9 +10,13 @@ For each website you visit it keeps, on your device only (`chrome.storage.local`
 
 - the site's hostname (for example `example.com`);
 - the hostnames of third-party domains that the page requested resources from;
-- the names of browser capabilities the page used (for example `geolocation`, `webrtc`).
+- the names of browser capabilities the page used (for example `geolocation`, `webrtc`);
+- for external scripts the page loads, a short SHA-256 hash (8 bytes) keyed by the script's host and path, used to notice when a known script's content changes. The script itself is **not** stored;
+- your choices: items you marked as trusted (added to that site's known list) and sites you muted.
 
-It does not store page content, URLs with paths or query strings, form data, cookies, passwords or your identity.
+To compute a script hash, the extension requests the same script URL again, normally answered from your browser cache, without cookies. The response is hashed in memory and discarded.
+
+It does not store page content, script source code, URLs with paths or query strings, form data, cookies, passwords or your identity.
 
 ## Why it needs its permissions
 

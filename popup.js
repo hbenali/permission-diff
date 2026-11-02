@@ -26,44 +26,66 @@ $('clear').onclick = async e => {
   await chrome.storage.local.clear(); await chrome.storage.session.clear(); location.reload();
 };
 
-function section(title, items, render) {
-  const s = el('div', 'section'); s.append(el('h2', null, `${title} (${items.length})`));
-  for (const i of items) s.append(render(i));
+let tabId = null;
+const send = msg => chrome.runtime.sendMessage({ ...msg, tabId });
+const trust = (kind, value) => send({ type: 'trust', kind, value }).then(render);
+
+function section(title, kind, items, rowText) {
+  const s = el('div', 'section');
+  const head = el('div', 'sechead'); head.append(el('h2', null, `${title} (${items.length})`));
+  if (items.length > 1) { const b = el('button', 'trustall', 'Trust all'); b.onclick = async () => { for (const i of items) await send({ type: 'trust', kind, value: i }); send({ type: 'popup' }).then(render); }; head.append(b); }
+  s.append(head);
+  for (const i of items) {
+    const [name, desc] = rowText(i);
+    const r = el('div', 'item'); const t = el('div', 'txt'); t.append(el('b', null, name)); if (desc) t.append(el('small', null, desc));
+    const b = el('button', 'trust', 'Trust'); b.title = 'Treat as expected for this site'; b.onclick = () => trust(kind, i);
+    r.append(el('span', 'dot'), t, b); s.append(r);
+  }
   return s;
 }
-const domainRow = d => { const r = el('div', 'item'); r.append(el('span', 'dot'), el('b', null, d)); return r; };
-const capRow = c => {
-  const [name, desc] = CAPS[c] || [c, 'Used by the page'];
-  const r = el('div', 'item'); const t = el('div'); t.append(el('b', null, name), el('small', null, desc));
-  r.append(el('span', 'dot'), t); return r;
-};
+const capText = c => CAPS[c] || [c, 'Used by the page'];
+const domText = d => [d, null];
+const scriptText = k => [k, 'Script content changed since your last visit'];
+
 function known(base) {
-  const n = base.thirdParties.length + base.capabilities.length;
-  if (!n) return null;
-  const d = el('details'); d.append(el('summary', null, `Already known for this site (${n})`));
-  const ul = el('ul');
-  for (const x of [...base.thirdParties, ...base.capabilities]) ul.append(el('li', null, x));
+  const items = [...base.thirdParties, ...base.capabilities, ...Object.keys(base.scripts || {}).map(k => k + ' (script)')];
+  if (!items.length) return null;
+  const d = el('details'); d.append(el('summary', null, `Already known for this site (${items.length})`));
+  const ul = el('ul'); for (const x of items) ul.append(el('li', null, x));
   d.append(ul); return d;
 }
 
+function render(r) {
+  const out = $('out'); out.textContent = '';
+  const pill = $('pill'); pill.hidden = true; pill.className = 'pill';
+  $('mute').hidden = !r;
+  if (!r) { out.append(el('div', 'hint', 'Nothing to show for this tab. Open a regular web page (http or https) and reload it.')); return; }
+  const { site, diff, baseline, muted } = r;
+  const n = diff.thirdParties.length + diff.capabilities.length + diff.scripts.length;
+  $('mute').textContent = muted ? 'Unmute this site' : 'Mute this site';
+  $('mute').onclick = () => send({ type: 'mute', muted: !muted }).then(render);
+  out.append(el('div', 'site', site));
+  pill.hidden = false;
+  if (muted) {
+    pill.textContent = 'Muted'; pill.classList.add('mute');
+    out.append(el('div', 'sub', 'Changes are still recorded, but the badge stays quiet for this site.'));
+    if (n) out.append(el('div', 'muted-note', `${n} change${n > 1 ? 's' : ''} hidden while muted.`));
+    return;
+  }
+  if (baseline.visits === 0) {
+    out.append(el('div', 'sub', 'First visit: building a baseline. Changes are flagged from the next visit.'));
+    pill.textContent = 'Baseline'; const k = known(baseline); if (k) out.append(k); return;
+  }
+  out.append(el('div', 'sub', `Compared with ${baseline.visits} earlier visit${baseline.visits > 1 ? 's' : ''}`));
+  pill.textContent = n ? `${n} new` : 'No changes'; pill.classList.add(n ? 'bad' : 'ok');
+  if (!n) out.append(el('div', 'empty', '✓ Nothing new since your earlier visits'));
+  if (diff.capabilities.length) out.append(section('New capabilities', 'capabilities', diff.capabilities, capText));
+  if (diff.scripts.length) out.append(section('Changed scripts', 'scripts', diff.scripts, scriptText));
+  if (diff.thirdParties.length) out.append(section('New third-party domains', 'thirdParties', diff.thirdParties, domText));
+  const k = known(baseline); if (k) out.append(k);
+}
+
 chrome.tabs.query({ active: true, currentWindow: true })
-  .then(([tab]) => chrome.runtime.sendMessage({ type: 'popup', tabId: tab.id }))
-  .then(r => {
-    const out = $('out'); out.textContent = '';
-    if (!r) { out.append(el('div', 'hint', 'Nothing to show for this tab. Open a regular web page (http or https) and reload it.')); return; }
-    const { site, diff, baseline } = r;
-    const n = diff.thirdParties.length + diff.capabilities.length;
-    out.append(el('div', 'site', site));
-    const pill = $('pill'); pill.hidden = false;
-    if (baseline.visits === 0) {
-      out.append(el('div', 'sub', 'First visit: building a baseline. Changes are flagged from the next visit.'));
-      pill.textContent = 'Baseline'; out.append(...[known(baseline)].filter(Boolean)); return;
-    }
-    out.append(el('div', 'sub', `Compared with ${baseline.visits} earlier visit${baseline.visits > 1 ? 's' : ''}`));
-    pill.textContent = n ? `${n} new` : 'No changes'; pill.className = 'pill ' + (n ? 'bad' : 'ok');
-    if (!n) { out.append(el('div', 'empty', '✓ Nothing new since your earlier visits')); }
-    if (diff.capabilities.length) out.append(section('New capabilities', diff.capabilities, capRow));
-    if (diff.thirdParties.length) out.append(section('New third-party domains', diff.thirdParties, domainRow));
-    const k = known(baseline); if (k) out.append(k);
-  })
+  .then(([tab]) => { tabId = tab.id; return send({ type: 'popup' }); })
+  .then(render)
   .catch(() => { $('out').textContent = 'Could not read data for this tab.'; });

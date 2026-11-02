@@ -7,6 +7,7 @@ for (const target of ['chrome', 'firefox']) {
   const dir = `build/${target}`;
   mkdirSync(dir, { recursive: true });
   for (const f of FILES) cpSync(f, `${dir}/${f}`);
+  cpSync('icons', `${dir}/icons`, { recursive: true, filter: s => !s.endsWith('.svg') });
   const m = structuredClone(base);
   if (target === 'firefox') {
     m.background = { scripts: ['background.js'], type: 'module' };

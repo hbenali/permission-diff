@@ -23,3 +23,10 @@ chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) =>
   }
   if (!r.diff.thirdParties.length && !r.diff.capabilities.length && r.baseline.visits) out.append('No changes.');
 });
+
+// Clear everything the extension has stored (baselines and current visits).
+const clear = document.createElement('button');
+clear.textContent = 'Clear stored data';
+clear.style.marginTop = '10px';
+clear.onclick = async () => { await chrome.storage.local.clear(); await chrome.storage.session.clear(); location.reload(); };
+document.body.append(clear);

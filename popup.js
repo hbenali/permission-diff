@@ -1,4 +1,13 @@
 const out = document.getElementById('out');
+// Firefox MV3 treats host permissions as optional: ask for them from a user gesture.
+const ALL = { origins: ['<all_urls>'] };
+chrome.permissions.contains(ALL).then(ok => {
+  if (ok) return;
+  const b = document.createElement('button');
+  b.textContent = 'Grant access to all sites (required)';
+  b.onclick = () => chrome.permissions.request(ALL).then(g => { if (g) location.reload(); });
+  document.body.prepend(b);
+});
 const li = (items) => items.map(i => { const e = document.createElement('li'); const c = document.createElement('code'); c.textContent = i; e.append(c); return e; });
 chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) =>
   chrome.runtime.sendMessage({ type: 'popup', tabId: tab.id })).then(r => {

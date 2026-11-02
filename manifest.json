@@ -3,12 +3,58 @@
   "name": "Permission Diff",
   "version": "0.1.0",
   "description": "Tells you when a site starts using new capabilities or loading new third-party domains. Local only.",
-  "permissions": ["storage", "webRequest", "webNavigation", "tabs"],
-  "host_permissions": ["<all_urls>"],
-  "background": { "service_worker": "background.js", "type": "module" },
-  "content_scripts": [
-    { "matches": ["<all_urls>"], "js": ["hook.js"], "run_at": "document_start", "world": "MAIN", "all_frames": true },
-    { "matches": ["<all_urls>"], "js": ["relay.js"], "run_at": "document_start", "all_frames": true }
+  "permissions": [
+    "storage",
+    "webRequest",
+    "webNavigation",
+    "tabs"
   ],
-  "action": { "default_popup": "popup.html", "default_title": "Permission Diff" }
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": [
+      "background.js"
+    ],
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "relay.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Permission Diff"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "permission-diff@hbenali.github.io",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  }
 }

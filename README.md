@@ -6,7 +6,11 @@ Status: prototype. Everything stays local (`chrome.storage`); nothing is sent an
 
 ## Try it
 
-`chrome://extensions` → Developer mode → Load unpacked → select this folder. The first visit to a site builds its baseline; later visits show new items on the toolbar badge and in the popup.
+**Chrome / Brave:** `chrome://extensions` (`brave://extensions`) → Developer mode → Load unpacked → select this folder.
+
+**Firefox:** run `node scripts/build.mjs`, then `about:debugging#/runtime/this-firefox` → Load Temporary Add-on → `build/firefox/manifest.json`; click the toolbar icon and grant site access.
+
+ The first visit to a site builds its baseline; later visits show new items on the toolbar badge and in the popup.
 
 ## Test
 

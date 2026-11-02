@@ -1,6 +1,6 @@
 # Publishing
 
-Push a tag `X.Y.Z` that equals `manifest.json` `version`. `.github/workflows/publish.yml` then tests, lints and zips, drafts a GitHub release with the zip, and submits to both stores. Sign the tag: `git tag -s X.Y.Z -m X.Y.Z`. Publish the draft release by hand with notes.
+The Chrome and Firefox zips come from `scripts/build.mjs` (different background keys per browser). Push a tag `X.Y.Z` that equals `manifest.json` `version`. `.github/workflows/publish.yml` then tests, lints and zips, drafts a GitHub release with the zip, and submits to both stores. Sign the tag: `git tag -s X.Y.Z -m X.Y.Z`. Publish the draft release by hand with notes.
 
 ## One-time setup (cannot be automated)
 
